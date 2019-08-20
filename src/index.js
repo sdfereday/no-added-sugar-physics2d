@@ -50,7 +50,8 @@ const loop = GameLoop({
 
     if (keyPressed("d")) p.moveRight();
 
-    // Really need a 'key released', will need to make one I guess.
+    // Really need a 'key released', will need to make one I guess:
+    // https://github.com/straker/kontra/blob/master/src/keyboard.js
     if (keyPressed("w")) p.jump();
 
     /* Make sure this happens after keyPress or it won't register
