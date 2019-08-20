@@ -3973,26 +3973,29 @@ exports.overlaps = overlaps;
 
 var MovingObject = function MovingObject() {
   var playerXSpeed = 168;
-  var gravity = 7000; // Higher === more force - This is a huge scale, is this correct?
+  var gravity = 10; // Higher === more force - This is a huge scale, is this correct?
 
-  var jumpSpeed = 7000;
+  var jumpSpeed = -12;
   var speed = (0, _kontra.Vector)(0, 0);
   var pos = (0, _kontra.Vector)(32, 32);
   var size = (0, _kontra.Vector)(1, 1.5);
-  var xSpeed = 0;
-  var ySpeed = 0;
+  var xVelocity = 0;
+  var yVelocity = 0;
+  var onGround = false;
+  var jumped = false;
   var touchesWall = false;
   var touchesGround = true;
-  var landing = false;
 
   var _moveX = function moveX(dir) {
-    return dir > 0 ? xSpeed += playerXSpeed : dir < 0 ? xSpeed -= playerXSpeed : 0;
+    return dir > 0 ? xVelocity += playerXSpeed : dir < 0 ? xVelocity -= playerXSpeed : 0;
   };
 
-  var fired = false;
-
   var _jump = function jump() {
-    if (fired) return; // You need velocities for this kind of stuff.
+    if (onGround && !jumped) {
+      yVelocity = -246.0;
+      onGround = false;
+      jumped = true;
+    } // You need velocities for this kind of stuff.
     // Perhaps take a look at: https://gamemechanicexplorer.com/#platformer-4
 
     /*
@@ -4000,10 +4003,11 @@ var MovingObject = function MovingObject() {
     http://jsfiddle.net/LyM87/
     https://gamedev.stackexchange.com/questions/29617/how-to-make-a-character-jump
     */
+    // yVelocity -= jumpSpeed;
+    // landing = true
+    // fired = true
+    // y > 0 ? (yVelocity -= jumpSpeed) : y < 0 ? (yVelocity += jumpSpeed) : y;
 
-    ySpeed -= jumpSpeed;
-    landing = true;
-    fired = true; // y > 0 ? (ySpeed -= jumpSpeed) : y < 0 ? (ySpeed += jumpSpeed) : y;
   };
 
   return {
@@ -4015,32 +4019,46 @@ var MovingObject = function MovingObject() {
     },
     fixedUpdate: function fixedUpdate(deltaTime) {
       /// X
-      // xSpeed set prior by call before fixedUpdate
+      // xVelocityset prior by call before fixedUpdate
       // No walls touched on x axis, so carry on moving
       // if (!state.level.touches(movedX, this.size, "wall")) {
-      pos = pos.add((0, _kontra.Vector)(xSpeed * deltaTime, 0)); // }
+      //pos = pos.add(Vector(xVelocity * deltaTime, 0));
+      // }
       /// Y
+      // Always add gravity
+      yVelocity += gravity; //const movedY = pos.add(Vector(0, yVelocity * deltaTime));
+      // This is all a little messy, needs tidying
 
-      var movedY = pos.add((0, _kontra.Vector)(0, ySpeed * deltaTime)); // No walls touched on y axis, so keep falling
+      if (pos.y >= 175) {
+        // TODO: Look at epsilon
+        yVelocity = jumped ? yVelocity : 0;
+        onGround = true;
+      }
+
+      if (pos.y >= 175 && jumped) {
+        jumped = false;
+      }
+
+      pos = pos.add((0, _kontra.Vector)(xVelocity * deltaTime, yVelocity * deltaTime)); // No walls touched on y axis, so keep falling
       //if (!state.level.touches(movedY, size, "wall")) {
       //if (touchesGround) {
-
-      if (movedY.y < 200) {
-        pos = movedY; // Quick velocity test for falling?
-        //speed.y += 10;
-        // } else if (keys.ArrowUp && ySpeed > 0) {
-        //   ySpeed = -jumpSpeed;
-      } else {
-        // Reset velocities now you're not falling?
-        speed.y = 0;
-      } /// RETURN
+      // if (movedY.y < 200) {
+      //   pos = movedY;
+      //   // Quick velocity test for falling?
+      //   //speed.y += 10;
+      //   // } else if (keys.ArrowUp && yVelocity > 0) {
+      //   //   yVelocity = -jumpSpeed;
+      // } else {
+      //   // Reset velocities now you're not falling?
+      //   speed.y = 0;
+      // }
+      /// RETURN
       // Returns current pos AND new heading (may need this)
-      //return new Player(pos, new Vec(xSpeed, ySpeed));
+      //return new Player(pos, new Vec(xSpeed, yVelocity));
       // Reset speed values for next tick test
+      // yVelocity = speed.y + deltaTime * gravity;
 
-
-      xSpeed = 0;
-      ySpeed = speed.y + deltaTime * gravity;
+      xVelocity = 0;
       return pos;
     }
   };
@@ -4115,7 +4133,8 @@ var loop = (0, _kontra.GameLoop)({
   // create the main game loop
   update: function update(delta) {
     if ((0, _kontra.keyPressed)("a")) p.moveLeft();
-    if ((0, _kontra.keyPressed)("d")) p.moveRight();
+    if ((0, _kontra.keyPressed)("d")) p.moveRight(); // Really need a 'key released', will need to make one I guess.
+
     if ((0, _kontra.keyPressed)("w")) p.jump();
     /* Make sure this happens after keyPress or it won't register
     on the sprite body. */
