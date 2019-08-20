@@ -3935,6 +3935,10 @@ var _kontra = require("kontra");
 
 function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
+var between = function between(v, a, b) {
+  return v > a && v < b;
+};
+
 var multiply = function multiply(vec, v) {
   var x = 0;
   var y = 0;
@@ -3995,12 +3999,15 @@ var AABB = function AABB() {
       return halfSize;
     })
   };
-};
+}; // Not sure what these scales work to
+
 
 exports.AABB = AABB;
 var Constants = {
-  cGravity: 1,
-  cMaxFallingSpeed: 32
+  cGravity: 100,
+  cMaxFallingSpeed: 32,
+  cMovementSpeed: 2,
+  cMaxVelocity: 4
   /* Your characters and sprites will either inherit or use this
   as part of their movement in 2D space. */
 
@@ -4011,7 +4018,7 @@ var MovingObject = function MovingObject() {
   /// Consider 'useState' for this stuff, screw 'lets'
   // Initial positions and velocities
   var mOldPosition = (0, _kontra.Vector)(0, 0);
-  var mPosition = (0, _kontra.Vector)(0, 56);
+  var mPosition = (0, _kontra.Vector)(0, 0);
   var mOldSpeed = (0, _kontra.Vector)(0, 0);
   var mSpeed = (0, _kontra.Vector)(0, 0);
   var mScale = (0, _kontra.Vector)(0, 0); // Offsets
@@ -4028,28 +4035,31 @@ var MovingObject = function MovingObject() {
   var mWasAtCeiling = false;
   var mAtCeiling = false;
   return {
-    FixedUpdate: function FixedUpdate(deltaTime) {
+    velocity: {
+      goRight: function goRight() {
+        mSpeed.x += Constants.cMovementSpeed;
+        mSpeed.x = Math.max(mSpeed.x, Constants.cMaxVelocity);
+      },
+      goLeft: function goLeft() {
+        mSpeed.x -= Constants.cMovementSpeed;
+        mSpeed.x = Math.max(mSpeed.x, Constants.cMaxVelocity);
+      }
+    },
+    fixedUpdate: function fixedUpdate(deltaTime) {
       mOldPosition = mPosition;
       mOldSpeed = mSpeed;
       mWasOnGround = mOnGround;
       mPushedRightWall = mPushesRightWall;
       mPushedLeftWall = mPushesLeftWall;
       mWasAtCeiling = mAtCeiling; // Simple test for ground (not testing for gaps between bodies, but can be fixed)
+      // Doing a between to prevent fall-through (cheap way of doing it at least)
 
-      var groundPos = 38;
-      var fakeBodyHeight = 32;
-
-      if (mPosition.y < groundPos) {
-        mPosition.y = groundPos - fakeBodyHeight;
-        mOnGround = true;
-      } else {
-        mOnGround = false;
-      } // Update position also
-
+      mOnGround = between(mPosition.y, 99, 100); // Update center position also
 
       mAABB.center = mPosition.add(mAABBOffset);
 
       if (mOnGround) {
+        mSpeed = (0, _kontra.Vector)(0, 0);
         return {
           pos: (0, _kontra.Vector)(Math.round(mPosition.x), Math.round(mPosition.y)),
           localScale: (0, _kontra.Vector)(mScale.x, mScale.y)
@@ -4058,7 +4068,7 @@ var MovingObject = function MovingObject() {
       // Update the position of the body
 
 
-      mPosition.add(multiply(mSpeed, deltaTime)); /// Gravity checking for next frame
+      mPosition = mPosition.add(multiply(mSpeed, deltaTime)); /// Gravity checking for next frame
       // Give it some gravity
 
       mSpeed.y += Constants.cGravity * deltaTime; // Don't let it go too far
@@ -4094,36 +4104,55 @@ var _physics = require("./physics");
 var _init = (0, _kontra.init)(),
     canvas = _init.canvas;
 
-var sprite = (0, _kontra.Sprite)({
-  x: 100,
-  // starting x,y position of the sprite
-  y: 80,
-  color: 'red',
-  // fill color of the sprite rectangle
-  width: 20,
-  // width and height of the sprite rectangle
-  height: 40,
-  dx: 2 // move the sprite 2px to the right every frame
+var KSprite = function KSprite() {
+  return (0, _kontra.Sprite)({
+    x: 100,
+    // starting x,y position of the sprite
+    y: 80,
+    color: 'red',
+    // fill color of the sprite rectangle
+    width: 20,
+    // width and height of the sprite rectangle
+    height: 40,
+    dx: 2 // move the sprite 2px to the right every frame
 
-});
-var mObj = (0, _physics.MovingObject)();
+  });
+};
+
+var Sprite = function Sprite() {
+  var body = (0, _physics.MovingObject)();
+  var sprite = KSprite();
+  return {
+    move: function move(x) {
+      if (x > 0) {
+        body.velocity.goRight();
+      } else if (x < 0) {
+        body.velocity.goLeft();
+      }
+    },
+    update: function update(delta) {
+      sprite.update();
+
+      var _body$fixedUpdate = body.fixedUpdate(delta),
+          pos = _body$fixedUpdate.pos;
+
+      sprite.x = pos.x;
+      sprite.y = pos.y;
+    },
+    render: function render() {
+      return sprite.render();
+    }
+  };
+};
+
+var p = Sprite();
 var loop = (0, _kontra.GameLoop)({
   // create the main game loop
   update: function update(delta) {
-    // update the game state
-    sprite.update(); // wrap the sprites position when it reaches
-    // the edge of the screen
-
-    if (sprite.x > canvas.width) {
-      sprite.x = -sprite.width;
-    } // Physics tests
-
-
-    var objData = mObj.FixedUpdate(delta);
+    p.update(delta);
   },
   render: function render() {
-    // render the game state
-    sprite.render();
+    p.render();
   }
 });
 loop.start(); // start the game
@@ -4155,7 +4184,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "54219" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "62574" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

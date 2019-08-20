@@ -2,6 +2,9 @@
     Physics is built from the following tutorial:
     https://gamedevelopment.tutsplus.com/tutorials/basic-2d-platformer-physics-part-1--cms-25799
 
+    Also have a look at:
+    https://eloquentjavascript.net/16_game.html
+
     It requires kontra to work (uses vectors, etc).
 
     Some vector functions used:
@@ -9,9 +12,10 @@
 */
 import { Vector } from 'kontra'
 
+const between = (v, a, b) => v > a && v < b
+
 const multiply = (vec, v) => {
   let x = 0
-
   let y = 0
   if (typeof v === 'object') {
     x = vec.x * v.x
@@ -43,9 +47,12 @@ export const AABB = () => {
   }
 }
 
+// Not sure what these scales work to
 export const Constants = {
-  cGravity: 1,
-  cMaxFallingSpeed: 32
+  cGravity: 100,
+  cMaxFallingSpeed: 32,
+  cMovementSpeed: 2,
+  cMaxVelocity: 4
 }
 
 /* Your characters and sprites will either inherit or use this
@@ -54,7 +61,7 @@ export const MovingObject = () => {
   /// Consider 'useState' for this stuff, screw 'lets'
   // Initial positions and velocities
   let mOldPosition = Vector(0, 0)
-  let mPosition = Vector(0, 56)
+  let mPosition = Vector(0, 0)
 
   let mOldSpeed = Vector(0, 0)
   let mSpeed = Vector(0, 0)
@@ -79,7 +86,17 @@ export const MovingObject = () => {
   let mAtCeiling = false
 
   return {
-    FixedUpdate: deltaTime => {
+    velocity: {
+      goRight: () => {
+        mSpeed.x += Constants.cMovementSpeed
+        mSpeed.x = Math.max(mSpeed.x, Constants.cMaxVelocity)
+      },
+      goLeft: () => {
+        mSpeed.x -= Constants.cMovementSpeed
+        mSpeed.x = Math.max(mSpeed.x, Constants.cMaxVelocity)
+      }
+    },
+    fixedUpdate: deltaTime => {
       mOldPosition = mPosition
       mOldSpeed = mSpeed
 
@@ -89,19 +106,16 @@ export const MovingObject = () => {
       mWasAtCeiling = mAtCeiling
 
       // Simple test for ground (not testing for gaps between bodies, but can be fixed)
-      const groundPos = 38
-      const fakeBodyHeight = 32
-      if (mPosition.y < groundPos) {
-        mPosition.y = groundPos - fakeBodyHeight
-        mOnGround = true
-      } else {
-        mOnGround = false
-      }
-
-      // Update position also
+      // Doing a between to prevent fall-through (cheap way of doing it at least)
+      mOnGround = between(mPosition.y, 99, 100)
+      
+      // Update center position also
       mAABB.center = mPosition.add(mAABBOffset)
 
       if (mOnGround) {
+
+        mSpeed = Vector(0, 0)
+
         return {
             pos: Vector(Math.round(mPosition.x), Math.round(mPosition.y)),
             localScale: Vector(mScale.x, mScale.y)
@@ -110,7 +124,7 @@ export const MovingObject = () => {
 
       /// When not on floor tests
       // Update the position of the body
-      mPosition.add(multiply(mSpeed, deltaTime))
+      mPosition = mPosition.add(multiply(mSpeed, deltaTime))
 
       /// Gravity checking for next frame
       // Give it some gravity

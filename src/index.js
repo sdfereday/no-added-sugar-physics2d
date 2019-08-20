@@ -1,9 +1,9 @@
-import { init, Sprite, GameLoop } from 'kontra'
+import { init, Sprite as KontraSprite, GameLoop } from 'kontra'
 import { MovingObject } from './physics'
 
 const { canvas } = init()
 
-const sprite = Sprite({
+const KSprite = () => KontraSprite({
   x: 100, // starting x,y position of the sprite
   y: 80,
   color: 'red', // fill color of the sprite rectangle
@@ -12,26 +12,40 @@ const sprite = Sprite({
   dx: 2 // move the sprite 2px to the right every frame
 })
 
-const mObj = MovingObject()
+const Sprite = () => {
+  
+  const body = MovingObject()
+  const sprite = KSprite()
+
+  return {
+    move: x => {
+      if (x > 0) {
+        body.velocity.goRight()
+      } else if (x < 0) {
+        body.velocity.goLeft()
+      }
+    },
+    update: (delta) => {
+      sprite.update()
+
+      const { pos } = body.fixedUpdate(delta)
+
+      sprite.x = pos.x
+      sprite.y = pos.y
+    },
+    render: () => sprite.render()
+  }
+}
+
+const p = Sprite()
 
 const loop = GameLoop({
   // create the main game loop
   update: delta => {
-    // update the game state
-    sprite.update()
-
-    // wrap the sprites position when it reaches
-    // the edge of the screen
-    if (sprite.x > canvas.width) {
-      sprite.x = -sprite.width
-    }
-
-    // Physics tests
-    const objData = mObj.FixedUpdate(delta)
+    p.update(delta)
   },
   render: () => {
-    // render the game state
-    sprite.render()
+    p.render()
   }
 })
 
