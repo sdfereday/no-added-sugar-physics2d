@@ -5,147 +5,125 @@
     Also have a look at:
     https://eloquentjavascript.net/16_game.html
 
+    And:
+    https://github.com/jobtalle/PlatformerPhysics/blob/master/js/game.js
+
     It requires kontra to work (uses vectors, etc).
 
     Some vector functions used:
     https://gist.github.com/winduptoy/a1aa09c3499e09edbd33
 */
-import { Vector } from 'kontra'
+import { Vector } from "kontra";
 
-const between = (v, a, b) => v > a && v < b
+const between = (v, a, b) => v > a && v < b;
 
 const multiply = (vec, v) => {
-  let x = 0
-  let y = 0
-  if (typeof v === 'object') {
-    x = vec.x * v.x
-    y = vec.y * v.y
+  let x = 0;
+  let y = 0;
+  if (typeof v === "object") {
+    x = vec.x * v.x;
+    y = vec.y * v.y;
   } else {
-    x = vec.x * v
-    y = vec.y * v
+    x = vec.x * v;
+    y = vec.y * v;
   }
-  return Vector(x, y)
-}
+  return Vector(x, y);
+};
 
 export const overlaps = other => {
   if (Math.Abs(center.x - other.center.x) > halfSize.x + other.halfSize.x) {
-    return false
+    return false;
   }
   if (Math.Abs(center.y - other.center.y) > halfSize.y + other.halfSize.y) {
-    return false
+    return false;
   }
-  return true
-}
-
-export const AABB = () => {
-  const center = Vector(0, 0)
-  const halfSize = Vector(0, 0)
-
-  return {
-    center: () => center,
-    halfSize: () => halfSize
-  }
-}
-
-// Not sure what these scales work to
-export const Constants = {
-  cGravity: 100,
-  cMaxFallingSpeed: 32,
-  cMovementSpeed: 2,
-  cMaxVelocity: 4
-}
+  return true;
+};
 
 /* Your characters and sprites will either inherit or use this
 as part of their movement in 2D space. */
 export const MovingObject = () => {
-  /// Consider 'useState' for this stuff, screw 'lets'
-  // Initial positions and velocities
-  let mOldPosition = Vector(0, 0)
-  let mPosition = Vector(0, 0)
+  const playerXSpeed = 168;
+  const gravity = 7000; // Higher === more force - This is a huge scale, is this correct?
+  const jumpSpeed = 7000;
 
-  let mOldSpeed = Vector(0, 0)
-  let mSpeed = Vector(0, 0)
+  let speed = Vector(0, 0);
+  let pos = Vector(32, 32);
+  let size = Vector(1, 1.5);
 
-  let mScale = Vector(0, 0)
+  let xSpeed = 0;
+  let ySpeed = 0;
 
-  // Offsets
-  let mAABB = AABB()
-  let mAABBOffset = Vector(0, 0)
+  let touchesWall = false;
+  let touchesGround = true;
 
-  // Positional states
-  let mPushedRightWall = false
-  let mPushesRightWall = false
+  let landing = false;
 
-  let mPushedLeftWall = false
-  let mPushesLeftWall = false
+  const moveX = dir =>
+    dir > 0 ? (xSpeed += playerXSpeed) : dir < 0 ? (xSpeed -= playerXSpeed) : 0;
 
-  let mWasOnGround = false
-  let mOnGround = false
 
-  let mWasAtCeiling = false
-  let mAtCeiling = false
+  let fired = false
+  const jump = () => {
+
+    if (fired) return
+  
+    // You need velocities for this kind of stuff.
+    // Perhaps take a look at: https://gamemechanicexplorer.com/#platformer-4
+    /*
+    And:
+    http://jsfiddle.net/LyM87/
+    https://gamedev.stackexchange.com/questions/29617/how-to-make-a-character-jump
+    */
+    ySpeed -= jumpSpeed;
+    landing = true
+    fired = true
+    // y > 0 ? (ySpeed -= jumpSpeed) : y < 0 ? (ySpeed += jumpSpeed) : y;
+  };
 
   return {
-    velocity: {
-      goRight: () => {
-        mSpeed.x += Constants.cMovementSpeed
-        mSpeed.x = Math.max(mSpeed.x, Constants.cMaxVelocity)
-      },
-      goLeft: () => {
-        mSpeed.x -= Constants.cMovementSpeed
-        mSpeed.x = Math.max(mSpeed.x, Constants.cMaxVelocity)
-      }
-    },
+    moveX: dir => moveX(dir),
+    jump: () => jump(),
     fixedUpdate: deltaTime => {
-      mOldPosition = mPosition
-      mOldSpeed = mSpeed
+      /// X
+      // xSpeed set prior by call before fixedUpdate
+      // No walls touched on x axis, so carry on moving
+      // if (!state.level.touches(movedX, this.size, "wall")) {
+      pos = pos.add(Vector(xSpeed * deltaTime, 0));
+      // }
 
-      mWasOnGround = mOnGround
-      mPushedRightWall = mPushesRightWall
-      mPushedLeftWall = mPushesLeftWall
-      mWasAtCeiling = mAtCeiling
+      /// Y
+      const movedY = pos.add(Vector(0, ySpeed * deltaTime));
 
-      // Simple test for ground (not testing for gaps between bodies, but can be fixed)
-      // Doing a between to prevent fall-through (cheap way of doing it at least)
-      mOnGround = between(mPosition.y, 99, 100)
-      
-      // Update center position also
-      mAABB.center = mPosition.add(mAABBOffset)
+      // No walls touched on y axis, so keep falling
+      //if (!state.level.touches(movedY, size, "wall")) {
+      //if (touchesGround) {
+      if (movedY.y < 200) {
+        pos = movedY;
 
-      if (mOnGround) {
+        // Quick velocity test for falling?
+        //speed.y += 10;
 
-        mSpeed = Vector(0, 0)
-
-        return {
-            pos: Vector(Math.round(mPosition.x), Math.round(mPosition.y)),
-            localScale: Vector(mScale.x, mScale.y)
-          }
+        // } else if (keys.ArrowUp && ySpeed > 0) {
+        //   ySpeed = -jumpSpeed;
+      } else {
+        // Reset velocities now you're not falling?
+        speed.y = 0;
       }
 
-      /// When not on floor tests
-      // Update the position of the body
-      mPosition = mPosition.add(multiply(mSpeed, deltaTime))
+      /// RETURN
+      // Returns current pos AND new heading (may need this)
+      //return new Player(pos, new Vec(xSpeed, ySpeed));
 
-      /// Gravity checking for next frame
-      // Give it some gravity
-      mSpeed.y += Constants.cGravity * deltaTime
+      // Reset speed values for next tick test
+      xSpeed = 0;
+      ySpeed = speed.y + deltaTime * gravity;
 
-      // Don't let it go too far
-      mSpeed.y = Math.max(mSpeed.y, Constants.cMaxFallingSpeed)
-
-      /* We need to output the body data to whatever's attached, for now will just do it
-      this way but it'll be actually embedded per sprite later on.
-
-      Data's rounded up so it doesn't do any weird sub-pixel nonsense.
-      */
-      return {
-        pos: Vector(Math.round(mPosition.x), Math.round(mPosition.y)),
-        localScale: Vector(mScale.x, mScale.y)
-      }
+      return pos;
     }
-  }
-}
+  };
+};
 
 export default () => {
-  return {}
-}
+  return {};
+};

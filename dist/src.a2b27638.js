@@ -3929,7 +3929,7 @@ exports.default = _default;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.default = exports.MovingObject = exports.Constants = exports.AABB = exports.overlaps = void 0;
+exports.default = exports.MovingObject = exports.overlaps = void 0;
 
 var _kontra = require("kontra");
 
@@ -3943,7 +3943,7 @@ var multiply = function multiply(vec, v) {
   var x = 0;
   var y = 0;
 
-  if (_typeof(v) === 'object') {
+  if (_typeof(v) === "object") {
     x = vec.x * v.x;
     y = vec.y * v.y;
   } else {
@@ -3965,124 +3965,83 @@ var overlaps = function overlaps(other) {
 
   return true;
 };
+/* Your characters and sprites will either inherit or use this
+as part of their movement in 2D space. */
+
 
 exports.overlaps = overlaps;
 
-var AABB = function AABB() {
-  var center = (0, _kontra.Vector)(0, 0);
-  var halfSize = (0, _kontra.Vector)(0, 0);
-  return {
-    center: function (_center) {
-      function center() {
-        return _center.apply(this, arguments);
-      }
-
-      center.toString = function () {
-        return _center.toString();
-      };
-
-      return center;
-    }(function () {
-      return center;
-    }),
-    halfSize: function (_halfSize) {
-      function halfSize() {
-        return _halfSize.apply(this, arguments);
-      }
-
-      halfSize.toString = function () {
-        return _halfSize.toString();
-      };
-
-      return halfSize;
-    }(function () {
-      return halfSize;
-    })
-  };
-}; // Not sure what these scales work to
-
-
-exports.AABB = AABB;
-var Constants = {
-  cGravity: 100,
-  cMaxFallingSpeed: 32,
-  cMovementSpeed: 2,
-  cMaxVelocity: 4
-  /* Your characters and sprites will either inherit or use this
-  as part of their movement in 2D space. */
-
-};
-exports.Constants = Constants;
-
 var MovingObject = function MovingObject() {
-  /// Consider 'useState' for this stuff, screw 'lets'
-  // Initial positions and velocities
-  var mOldPosition = (0, _kontra.Vector)(0, 0);
-  var mPosition = (0, _kontra.Vector)(0, 0);
-  var mOldSpeed = (0, _kontra.Vector)(0, 0);
-  var mSpeed = (0, _kontra.Vector)(0, 0);
-  var mScale = (0, _kontra.Vector)(0, 0); // Offsets
+  var playerXSpeed = 168;
+  var gravity = 7000; // Higher === more force - This is a huge scale, is this correct?
 
-  var mAABB = AABB();
-  var mAABBOffset = (0, _kontra.Vector)(0, 0); // Positional states
+  var jumpSpeed = 7000;
+  var speed = (0, _kontra.Vector)(0, 0);
+  var pos = (0, _kontra.Vector)(32, 32);
+  var size = (0, _kontra.Vector)(1, 1.5);
+  var xSpeed = 0;
+  var ySpeed = 0;
+  var touchesWall = false;
+  var touchesGround = true;
+  var landing = false;
 
-  var mPushedRightWall = false;
-  var mPushesRightWall = false;
-  var mPushedLeftWall = false;
-  var mPushesLeftWall = false;
-  var mWasOnGround = false;
-  var mOnGround = false;
-  var mWasAtCeiling = false;
-  var mAtCeiling = false;
+  var _moveX = function moveX(dir) {
+    return dir > 0 ? xSpeed += playerXSpeed : dir < 0 ? xSpeed -= playerXSpeed : 0;
+  };
+
+  var fired = false;
+
+  var _jump = function jump() {
+    if (fired) return; // You need velocities for this kind of stuff.
+    // Perhaps take a look at: https://gamemechanicexplorer.com/#platformer-4
+
+    /*
+    And:
+    http://jsfiddle.net/LyM87/
+    https://gamedev.stackexchange.com/questions/29617/how-to-make-a-character-jump
+    */
+
+    ySpeed -= jumpSpeed;
+    landing = true;
+    fired = true; // y > 0 ? (ySpeed -= jumpSpeed) : y < 0 ? (ySpeed += jumpSpeed) : y;
+  };
+
   return {
-    velocity: {
-      goRight: function goRight() {
-        mSpeed.x += Constants.cMovementSpeed;
-        mSpeed.x = Math.max(mSpeed.x, Constants.cMaxVelocity);
-      },
-      goLeft: function goLeft() {
-        mSpeed.x -= Constants.cMovementSpeed;
-        mSpeed.x = Math.max(mSpeed.x, Constants.cMaxVelocity);
-      }
+    moveX: function moveX(dir) {
+      return _moveX(dir);
+    },
+    jump: function jump() {
+      return _jump();
     },
     fixedUpdate: function fixedUpdate(deltaTime) {
-      mOldPosition = mPosition;
-      mOldSpeed = mSpeed;
-      mWasOnGround = mOnGround;
-      mPushedRightWall = mPushesRightWall;
-      mPushedLeftWall = mPushesLeftWall;
-      mWasAtCeiling = mAtCeiling; // Simple test for ground (not testing for gaps between bodies, but can be fixed)
-      // Doing a between to prevent fall-through (cheap way of doing it at least)
+      /// X
+      // xSpeed set prior by call before fixedUpdate
+      // No walls touched on x axis, so carry on moving
+      // if (!state.level.touches(movedX, this.size, "wall")) {
+      pos = pos.add((0, _kontra.Vector)(xSpeed * deltaTime, 0)); // }
+      /// Y
 
-      mOnGround = between(mPosition.y, 99, 100); // Update center position also
+      var movedY = pos.add((0, _kontra.Vector)(0, ySpeed * deltaTime)); // No walls touched on y axis, so keep falling
+      //if (!state.level.touches(movedY, size, "wall")) {
+      //if (touchesGround) {
 
-      mAABB.center = mPosition.add(mAABBOffset);
+      if (movedY.y < 200) {
+        pos = movedY; // Quick velocity test for falling?
+        //speed.y += 10;
+        // } else if (keys.ArrowUp && ySpeed > 0) {
+        //   ySpeed = -jumpSpeed;
+      } else {
+        // Reset velocities now you're not falling?
+        speed.y = 0;
+      } /// RETURN
+      // Returns current pos AND new heading (may need this)
+      //return new Player(pos, new Vec(xSpeed, ySpeed));
+      // Reset speed values for next tick test
 
-      if (mOnGround) {
-        mSpeed = (0, _kontra.Vector)(0, 0);
-        return {
-          pos: (0, _kontra.Vector)(Math.round(mPosition.x), Math.round(mPosition.y)),
-          localScale: (0, _kontra.Vector)(mScale.x, mScale.y)
-        };
-      } /// When not on floor tests
-      // Update the position of the body
 
-
-      mPosition = mPosition.add(multiply(mSpeed, deltaTime)); /// Gravity checking for next frame
-      // Give it some gravity
-
-      mSpeed.y += Constants.cGravity * deltaTime; // Don't let it go too far
-
-      mSpeed.y = Math.max(mSpeed.y, Constants.cMaxFallingSpeed);
-      /* We need to output the body data to whatever's attached, for now will just do it
-      this way but it'll be actually embedded per sprite later on.
-       Data's rounded up so it doesn't do any weird sub-pixel nonsense.
-      */
-
-      return {
-        pos: (0, _kontra.Vector)(Math.round(mPosition.x), Math.round(mPosition.y)),
-        localScale: (0, _kontra.Vector)(mScale.x, mScale.y)
-      };
+      xSpeed = 0;
+      ySpeed = speed.y + deltaTime * gravity;
+      return pos;
     }
   };
 };
@@ -4102,14 +4061,17 @@ var _kontra = require("kontra");
 var _physics = require("./physics");
 
 var _init = (0, _kontra.init)(),
-    canvas = _init.canvas;
+    canvas = _init.canvas; // Maybe just do this the once in master file
+
+
+(0, _kontra.initKeys)();
 
 var KSprite = function KSprite() {
   return (0, _kontra.Sprite)({
     x: 100,
     // starting x,y position of the sprite
     y: 80,
-    color: 'red',
+    color: "red",
     // fill color of the sprite rectangle
     width: 20,
     // width and height of the sprite rectangle
@@ -4123,21 +4085,24 @@ var Sprite = function Sprite() {
   var body = (0, _physics.MovingObject)();
   var sprite = KSprite();
   return {
-    move: function move(x) {
-      if (x > 0) {
-        body.velocity.goRight();
-      } else if (x < 0) {
-        body.velocity.goLeft();
-      }
+    moveRight: function moveRight() {
+      return body.moveX(1);
+    },
+    moveLeft: function moveLeft() {
+      return body.moveX(-1);
+    },
+    jump: function jump() {
+      return body.jump();
     },
     update: function update(delta) {
       sprite.update();
 
       var _body$fixedUpdate = body.fixedUpdate(delta),
-          pos = _body$fixedUpdate.pos;
+          x = _body$fixedUpdate.x,
+          y = _body$fixedUpdate.y;
 
-      sprite.x = pos.x;
-      sprite.y = pos.y;
+      sprite.x = x;
+      sprite.y = y;
     },
     render: function render() {
       return sprite.render();
@@ -4149,6 +4114,12 @@ var p = Sprite();
 var loop = (0, _kontra.GameLoop)({
   // create the main game loop
   update: function update(delta) {
+    if ((0, _kontra.keyPressed)("a")) p.moveLeft();
+    if ((0, _kontra.keyPressed)("d")) p.moveRight();
+    if ((0, _kontra.keyPressed)("w")) p.jump();
+    /* Make sure this happens after keyPress or it won't register
+    on the sprite body. */
+
     p.update(delta);
   },
   render: function render() {
@@ -4184,7 +4155,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "62574" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "55583" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
