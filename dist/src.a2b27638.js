@@ -3943,7 +3943,7 @@ var multiply = function multiply(vec, v) {
   var x = 0;
   var y = 0;
 
-  if (_typeof(v) === "object") {
+  if (_typeof(v) === 'object') {
     x = vec.x * v.x;
     y = vec.y * v.y;
   } else {
@@ -3981,7 +3981,7 @@ var MovingObject = function MovingObject() {
   var size = (0, _kontra.Vector)(1, 1.5);
   var xVelocity = 0;
   var yVelocity = 0;
-  var onGround = false;
+  var _onGround = false;
   var jumped = false;
   var touchesWall = false;
   var touchesGround = true;
@@ -3991,9 +3991,9 @@ var MovingObject = function MovingObject() {
   };
 
   var _jump = function jump() {
-    if (onGround && !jumped) {
+    if (_onGround && !jumped) {
       yVelocity = -246.0;
-      onGround = false;
+      _onGround = false;
       jumped = true;
     } // You need velocities for this kind of stuff.
     // Perhaps take a look at: https://gamemechanicexplorer.com/#platformer-4
@@ -4017,22 +4017,25 @@ var MovingObject = function MovingObject() {
     jump: function jump() {
       return _jump();
     },
+    onGround: function onGround() {
+      return _onGround;
+    },
     fixedUpdate: function fixedUpdate(deltaTime) {
       /// X
       // xVelocityset prior by call before fixedUpdate
       // No walls touched on x axis, so carry on moving
       // if (!state.level.touches(movedX, this.size, "wall")) {
-      //pos = pos.add(Vector(xVelocity * deltaTime, 0));
+      // pos = pos.add(Vector(xVelocity * deltaTime, 0));
       // }
       /// Y
       // Always add gravity
-      yVelocity += gravity; //const movedY = pos.add(Vector(0, yVelocity * deltaTime));
+      yVelocity += gravity; // const movedY = pos.add(Vector(0, yVelocity * deltaTime));
       // This is all a little messy, needs tidying
 
       if (pos.y >= 175) {
         // TODO: Look at epsilon
         yVelocity = jumped ? yVelocity : 0;
-        onGround = true;
+        _onGround = true;
       }
 
       if (pos.y >= 175 && jumped) {
@@ -4040,8 +4043,8 @@ var MovingObject = function MovingObject() {
       }
 
       pos = pos.add((0, _kontra.Vector)(xVelocity * deltaTime, yVelocity * deltaTime)); // No walls touched on y axis, so keep falling
-      //if (!state.level.touches(movedY, size, "wall")) {
-      //if (touchesGround) {
+      // if (!state.level.touches(movedY, size, "wall")) {
+      // if (touchesGround) {
       // if (movedY.y < 200) {
       //   pos = movedY;
       //   // Quick velocity test for falling?
@@ -4054,7 +4057,7 @@ var MovingObject = function MovingObject() {
       // }
       /// RETURN
       // Returns current pos AND new heading (may need this)
-      //return new Player(pos, new Vec(xSpeed, yVelocity));
+      // return new Player(pos, new Vec(xSpeed, yVelocity));
       // Reset speed values for next tick test
       // yVelocity = speed.y + deltaTime * gravity;
 
@@ -4071,25 +4074,24 @@ var _default = function _default() {
 };
 
 exports.default = _default;
-},{"kontra":"node_modules/kontra/kontra.mjs"}],"src/index.js":[function(require,module,exports) {
+},{"kontra":"node_modules/kontra/kontra.mjs"}],"src/Sprite.js":[function(require,module,exports) {
 "use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.Sprite = void 0;
 
 var _kontra = require("kontra");
 
 var _physics = require("./physics");
-
-var _init = (0, _kontra.init)(),
-    canvas = _init.canvas; // Maybe just do this the once in master file
-
-
-(0, _kontra.initKeys)();
 
 var KSprite = function KSprite() {
   return (0, _kontra.Sprite)({
     x: 100,
     // starting x,y position of the sprite
     y: 80,
-    color: "red",
+    color: 'red',
     // fill color of the sprite rectangle
     width: 20,
     // width and height of the sprite rectangle
@@ -4102,7 +4104,18 @@ var KSprite = function KSprite() {
 var Sprite = function Sprite() {
   var body = (0, _physics.MovingObject)();
   var sprite = KSprite();
+  var _isJumping = false;
+
+  var checkJump = function checkJump() {
+    if (_isJumping && body.onGround()) {
+      _isJumping = false;
+    }
+  };
+
   return {
+    isJumping: function isJumping() {
+      return _isJumping;
+    },
     moveRight: function moveRight() {
       return body.moveX(1);
     },
@@ -4110,7 +4123,9 @@ var Sprite = function Sprite() {
       return body.moveX(-1);
     },
     jump: function jump() {
-      return body.jump();
+      if (_isJumping) return;
+      _isJumping = true;
+      body.jump();
     },
     update: function update(delta) {
       sprite.update();
@@ -4121,6 +4136,7 @@ var Sprite = function Sprite() {
 
       sprite.x = x;
       sprite.y = y;
+      checkJump();
     },
     render: function render() {
       return sprite.render();
@@ -4128,16 +4144,97 @@ var Sprite = function Sprite() {
   };
 };
 
-var p = Sprite();
+exports.Sprite = Sprite;
+},{"kontra":"node_modules/kontra/kontra.mjs","./physics":"src/physics.js"}],"src/keys.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.keyReleased = exports.keyPressed = exports.initKeys = void 0;
+// https://github.com/straker/kontra/blob/master/src/keyboard.js
+var keyMap = {};
+var callbacks = {};
+var pressedKeys = {};
+
+var keydownEventHandler = function keydownEventHandler(evt) {
+  var key = keyMap[evt.which];
+  pressedKeys[key] = true;
+
+  if (callbacks[key]) {
+    callbacks[key](evt);
+  }
+};
+
+var keyupEventHandler = function keyupEventHandler(evt) {
+  pressedKeys[keyMap[evt.which]] = false;
+};
+
+var blurEventHandler = function blurEventHandler() {
+  pressedKeys = {};
+};
+
+var initKeys = function initKeys() {
+  var i; // alpha keys
+  // @see https://stackoverflow.com/a/43095772/2124254
+
+  for (i = 0; i < 26; i++) {
+    // rollupjs considers this a side-effect (for now), so we'll do it in the
+    // initKeys function
+    // @see https://twitter.com/lukastaegert/status/1107011988515893249?s=20
+    keyMap[65 + i] = (10 + i).toString(36);
+  } // numeric keys
+
+
+  for (i = 0; i < 10; i++) {
+    keyMap[48 + i] = '' + i;
+  }
+
+  window.addEventListener('keydown', keydownEventHandler);
+  window.addEventListener('keyup', keyupEventHandler);
+  window.addEventListener('blur', blurEventHandler);
+};
+
+exports.initKeys = initKeys;
+
+var keyPressed = function keyPressed(key) {
+  return !!pressedKeys[key];
+};
+
+exports.keyPressed = keyPressed;
+
+var keyReleased = function keyReleased(key) {
+  return !!pressedKeys[key];
+};
+
+exports.keyReleased = keyReleased;
+},{}],"src/index.js":[function(require,module,exports) {
+"use strict";
+
+var _kontra = require("kontra");
+
+var _Sprite = require("./Sprite");
+
+var _keys = require("./keys");
+
+var _init = (0, _kontra.init)(),
+    canvas = _init.canvas;
+
+var p = (0, _Sprite.Sprite)();
+var jumpReleased = true;
 var loop = (0, _kontra.GameLoop)({
   // create the main game loop
   update: function update(delta) {
-    if ((0, _kontra.keyPressed)("a")) p.moveLeft();
-    if ((0, _kontra.keyPressed)("d")) p.moveRight(); // Really need a 'key released', will need to make one I guess.
+    if ((0, _keys.keyPressed)('a')) p.moveLeft();
+    if ((0, _keys.keyPressed)('d')) p.moveRight();
 
-    if ((0, _kontra.keyPressed)("w")) p.jump();
+    if ((0, _keys.keyPressed)('w') && !p.isJumping() && jumpReleased) {
+      p.jump();
+      jumpReleased = false;
+    }
     /* Make sure this happens after keyPress or it won't register
     on the sprite body. */
+
 
     p.update(delta);
   },
@@ -4145,8 +4242,9 @@ var loop = (0, _kontra.GameLoop)({
     p.render();
   }
 });
+(0, _keys.initKeys)();
 loop.start(); // start the game
-},{"kontra":"node_modules/kontra/kontra.mjs","./physics":"src/physics.js"}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+},{"kontra":"node_modules/kontra/kontra.mjs","./Sprite":"src/Sprite.js","./keys":"src/keys.js"}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
@@ -4174,7 +4272,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "55583" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "64793" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
