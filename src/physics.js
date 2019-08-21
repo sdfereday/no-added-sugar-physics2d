@@ -13,64 +13,62 @@
     Some vector functions used:
     https://gist.github.com/winduptoy/a1aa09c3499e09edbd33
 */
-import { Vector } from 'kontra'
+import { Vector } from "kontra";
 
-const between = (v, a, b) => v > a && v < b
+const between = (v, a, b) => v > a && v < b;
 
 const multiply = (vec, v) => {
-  let x = 0
-  let y = 0
-  if (typeof v === 'object') {
-    x = vec.x * v.x
-    y = vec.y * v.y
+  let x = 0;
+  let y = 0;
+  if (typeof v === "object") {
+    x = vec.x * v.x;
+    y = vec.y * v.y;
   } else {
-    x = vec.x * v
-    y = vec.y * v
+    x = vec.x * v;
+    y = vec.y * v;
   }
-  return Vector(x, y)
-}
+  return Vector(x, y);
+};
 
 export const overlaps = other => {
   if (Math.Abs(center.x - other.center.x) > halfSize.x + other.halfSize.x) {
-    return false
+    return false;
   }
   if (Math.Abs(center.y - other.center.y) > halfSize.y + other.halfSize.y) {
-    return false
+    return false;
   }
-  return true
-}
+  return true;
+};
 
 /* Your characters and sprites will either inherit or use this
 as part of their movement in 2D space. */
 export const MovingObject = () => {
-  const playerXSpeed = 168
-  const gravity = 10 // Higher === more force - This is a huge scale, is this correct?
-  const jumpSpeed = -12
+  const playerXSpeed = 168;
+  const gravity = 10; // Higher === more force - This is a huge scale, is this correct?
+  const jumpSpeed = -12;
 
-  let speed = Vector(0, 0)
-  let pos = Vector(32, 32)
-  let size = Vector(1, 1.5)
+  let speed = Vector(0, 0);
+  let pos = Vector(32, 32);
+  let size = Vector(1, 1.5);
 
-  let xVelocity = 0
-  let yVelocity = 0
-  let onGround = false
-  let jumped = false
+  let xVelocity = 0;
+  let yVelocity = 0;
+  let onGround = false;
+  let jumped = false;
 
-  let touchesWall = false
-  let touchesGround = true
+  let touchesWall = false;
+  let touchesGround = true;
 
   const moveX = dir =>
     dir > 0
       ? (xVelocity += playerXSpeed)
-      : dir < 0
-        ? (xVelocity -= playerXSpeed)
-        : 0
+      : dir < 0 ? (xVelocity -= playerXSpeed) : 0;
 
   const jump = () => {
     if (onGround && !jumped) {
-      yVelocity = -246.0
-      onGround = false
-      jumped = true
+      yVelocity = -246.0;
+      onGround = false;
+      jumped = true;
     }
 
     // You need velocities for this kind of stuff.
@@ -84,7 +82,7 @@ export const MovingObject = () => {
     // landing = true
     // fired = true
     // y > 0 ? (yVelocity -= jumpSpeed) : y < 0 ? (yVelocity += jumpSpeed) : y;
-  }
+  };
 
   return {
     moveX: dir => moveX(dir),
@@ -100,21 +98,21 @@ export const MovingObject = () => {
 
       /// Y
       // Always add gravity
-      yVelocity += gravity
+      yVelocity += gravity;
       // const movedY = pos.add(Vector(0, yVelocity * deltaTime));
 
       // This is all a little messy, needs tidying
       if (pos.y >= 175) {
         // TODO: Look at epsilon
-        yVelocity = jumped ? yVelocity : 0
-        onGround = true
+        yVelocity = jumped ? yVelocity : 0;
+        onGround = true;
+
+        if (jumped) {
+          jumped = false;
+        }
       }
 
-      if (pos.y >= 175 && jumped) {
-        jumped = false
-      }
-
-      pos = pos.add(Vector(xVelocity * deltaTime, yVelocity * deltaTime))
+      pos = pos.add(Vector(xVelocity * deltaTime, yVelocity * deltaTime));
 
       // No walls touched on y axis, so keep falling
       // if (!state.level.touches(movedY, size, "wall")) {
@@ -137,13 +135,13 @@ export const MovingObject = () => {
       // return new Player(pos, new Vec(xSpeed, yVelocity));
       // Reset speed values for next tick test
       // yVelocity = speed.y + deltaTime * gravity;
-      xVelocity = 0
+      xVelocity = 0;
 
-      return pos
+      return pos;
     }
-  }
-}
+  };
+};
 
 export default () => {
-  return {}
-}
+  return {};
+};

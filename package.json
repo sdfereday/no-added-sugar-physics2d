@@ -8,7 +8,8 @@
     "build": "parcel build index.html"
   },
   "dependencies": {
-    "kontra": "^6.3.0"
+    "kontra": "^6.3.0",
+    "nanoevents": "^2.0.0"
   },
   "devDependencies": {
     "@babel/core": "7.2.0",

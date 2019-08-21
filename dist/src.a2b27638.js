@@ -3923,158 +3923,7 @@ let kontra = {
 };
 var _default = kontra;
 exports.default = _default;
-},{}],"src/physics.js":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = exports.MovingObject = exports.overlaps = void 0;
-
-var _kontra = require("kontra");
-
-function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
-
-var between = function between(v, a, b) {
-  return v > a && v < b;
-};
-
-var multiply = function multiply(vec, v) {
-  var x = 0;
-  var y = 0;
-
-  if (_typeof(v) === 'object') {
-    x = vec.x * v.x;
-    y = vec.y * v.y;
-  } else {
-    x = vec.x * v;
-    y = vec.y * v;
-  }
-
-  return (0, _kontra.Vector)(x, y);
-};
-
-var overlaps = function overlaps(other) {
-  if (Math.Abs(center.x - other.center.x) > halfSize.x + other.halfSize.x) {
-    return false;
-  }
-
-  if (Math.Abs(center.y - other.center.y) > halfSize.y + other.halfSize.y) {
-    return false;
-  }
-
-  return true;
-};
-/* Your characters and sprites will either inherit or use this
-as part of their movement in 2D space. */
-
-
-exports.overlaps = overlaps;
-
-var MovingObject = function MovingObject() {
-  var playerXSpeed = 168;
-  var gravity = 10; // Higher === more force - This is a huge scale, is this correct?
-
-  var jumpSpeed = -12;
-  var speed = (0, _kontra.Vector)(0, 0);
-  var pos = (0, _kontra.Vector)(32, 32);
-  var size = (0, _kontra.Vector)(1, 1.5);
-  var xVelocity = 0;
-  var yVelocity = 0;
-  var _onGround = false;
-  var jumped = false;
-  var touchesWall = false;
-  var touchesGround = true;
-
-  var _moveX = function moveX(dir) {
-    return dir > 0 ? xVelocity += playerXSpeed : dir < 0 ? xVelocity -= playerXSpeed : 0;
-  };
-
-  var _jump = function jump() {
-    if (_onGround && !jumped) {
-      yVelocity = -246.0;
-      _onGround = false;
-      jumped = true;
-    } // You need velocities for this kind of stuff.
-    // Perhaps take a look at: https://gamemechanicexplorer.com/#platformer-4
-
-    /*
-    And:
-    http://jsfiddle.net/LyM87/
-    https://gamedev.stackexchange.com/questions/29617/how-to-make-a-character-jump
-    */
-    // yVelocity -= jumpSpeed;
-    // landing = true
-    // fired = true
-    // y > 0 ? (yVelocity -= jumpSpeed) : y < 0 ? (yVelocity += jumpSpeed) : y;
-
-  };
-
-  return {
-    moveX: function moveX(dir) {
-      return _moveX(dir);
-    },
-    jump: function jump() {
-      return _jump();
-    },
-    onGround: function onGround() {
-      return _onGround;
-    },
-    fixedUpdate: function fixedUpdate(deltaTime) {
-      /// X
-      // xVelocityset prior by call before fixedUpdate
-      // No walls touched on x axis, so carry on moving
-      // if (!state.level.touches(movedX, this.size, "wall")) {
-      // pos = pos.add(Vector(xVelocity * deltaTime, 0));
-      // }
-      /// Y
-      // Always add gravity
-      yVelocity += gravity; // const movedY = pos.add(Vector(0, yVelocity * deltaTime));
-      // This is all a little messy, needs tidying
-
-      if (pos.y >= 175) {
-        // TODO: Look at epsilon
-        yVelocity = jumped ? yVelocity : 0;
-        _onGround = true;
-      }
-
-      if (pos.y >= 175 && jumped) {
-        jumped = false;
-      }
-
-      pos = pos.add((0, _kontra.Vector)(xVelocity * deltaTime, yVelocity * deltaTime)); // No walls touched on y axis, so keep falling
-      // if (!state.level.touches(movedY, size, "wall")) {
-      // if (touchesGround) {
-      // if (movedY.y < 200) {
-      //   pos = movedY;
-      //   // Quick velocity test for falling?
-      //   //speed.y += 10;
-      //   // } else if (keys.ArrowUp && yVelocity > 0) {
-      //   //   yVelocity = -jumpSpeed;
-      // } else {
-      //   // Reset velocities now you're not falling?
-      //   speed.y = 0;
-      // }
-      /// RETURN
-      // Returns current pos AND new heading (may need this)
-      // return new Player(pos, new Vec(xSpeed, yVelocity));
-      // Reset speed values for next tick test
-      // yVelocity = speed.y + deltaTime * gravity;
-
-      xVelocity = 0;
-      return pos;
-    }
-  };
-};
-
-exports.MovingObject = MovingObject;
-
-var _default = function _default() {
-  return {};
-};
-
-exports.default = _default;
-},{"kontra":"node_modules/kontra/kontra.mjs"}],"src/Sprite.js":[function(require,module,exports) {
+},{}],"src/Sprite.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4084,14 +3933,12 @@ exports.Sprite = void 0;
 
 var _kontra = require("kontra");
 
-var _physics = require("./physics");
-
 var KSprite = function KSprite() {
   return (0, _kontra.Sprite)({
     x: 100,
     // starting x,y position of the sprite
     y: 80,
-    color: 'red',
+    color: "red",
     // fill color of the sprite rectangle
     width: 20,
     // width and height of the sprite rectangle
@@ -4102,40 +3949,75 @@ var KSprite = function KSprite() {
 };
 
 var Sprite = function Sprite() {
-  var body = (0, _physics.MovingObject)();
   var sprite = KSprite();
-  var _isJumping = false;
+  var playerXSpeed = 168;
+  var gravity = 10; // Higher === more force - This is a huge scale, is this correct?
+
+  var jumpSpeed = -12;
+  var speed = (0, _kontra.Vector)(0, 0);
+  var pos = (0, _kontra.Vector)(32, 32);
+  var size = (0, _kontra.Vector)(1, 1.5);
+  var xVelocity = 0;
+  var yVelocity = 0;
+  var onGround = false;
+  var jumped = false;
+
+  var moveX = function moveX(dir) {
+    return dir > 0 ? xVelocity += playerXSpeed : dir < 0 ? xVelocity -= playerXSpeed : 0;
+  };
 
   var checkJump = function checkJump() {
-    if (_isJumping && body.onGround()) {
-      _isJumping = false;
+    if (jumped && onGround) {
+      jumped = false;
     }
   };
 
+  var _jump = function jump() {
+    if (onGround && !jumped) {
+      yVelocity = -246.0;
+      onGround = false;
+      jumped = true;
+    }
+  };
+
+  var physicsUpdate = function physicsUpdate(deltaTime, currentPos) {
+    yVelocity += gravity; // Testing if you're at the ground
+
+    if (currentPos.y >= 175 && !jumped) {
+      // TODO: Look at epsilon
+      yVelocity = 0;
+      onGround = true;
+    }
+
+    if (currentPos.y >= 175 && jumped) {
+      jumped = false;
+    } // Apply new vectors
+
+
+    var newPos = currentPos.add((0, _kontra.Vector)(xVelocity * deltaTime, yVelocity * deltaTime)); // Reset for next tick
+
+    xVelocity = 0;
+    return newPos;
+  };
+
   return {
-    isJumping: function isJumping() {
-      return _isJumping;
-    },
     moveRight: function moveRight() {
-      return body.moveX(1);
+      return moveX(1);
     },
     moveLeft: function moveLeft() {
-      return body.moveX(-1);
+      return moveX(-1);
+    },
+    isJumping: function isJumping() {
+      return jumped;
     },
     jump: function jump() {
-      if (_isJumping) return;
-      _isJumping = true;
-      body.jump();
+      return _jump();
     },
     update: function update(delta) {
       sprite.update();
-
-      var _body$fixedUpdate = body.fixedUpdate(delta),
-          x = _body$fixedUpdate.x,
-          y = _body$fixedUpdate.y;
-
-      sprite.x = x;
-      sprite.y = y;
+      pos = physicsUpdate(delta, pos);
+      sprite.x = pos.x;
+      sprite.y = pos.y;
       checkJump();
     },
     render: function render() {
@@ -4145,13 +4027,129 @@ var Sprite = function Sprite() {
 };
 
 exports.Sprite = Sprite;
-},{"kontra":"node_modules/kontra/kontra.mjs","./physics":"src/physics.js"}],"src/keys.js":[function(require,module,exports) {
+},{"kontra":"node_modules/kontra/kontra.mjs"}],"node_modules/nanoevents/index.js":[function(require,module,exports) {
+(
+/**
+ * Interface for event subscription.
+ *
+ * @example
+ * var NanoEvents = require('nanoevents')
+ *
+ * class Ticker {
+ *   constructor() {
+ *     this.emitter = new NanoEvents()
+ *   }
+ *   on() {
+ *     return this.emitter.on.apply(this.events, arguments)
+ *   }
+ *   tick() {
+ *     this.emitter.emit('tick')
+ *   }
+ * }
+ *
+ * @alias NanoEvents
+ * @class
+ */
+module.exports = function NanoEvents() {
+  /**
+   * Event names in keys and arrays with listeners in values.
+   * @type {object}
+   *
+   * @example
+   * Object.keys(ee.events)
+   *
+   * @alias NanoEvents#events
+   */
+  this.events = {};
+}).prototype = {
+  /**
+   * Calls each of the listeners registered for a given event.
+   *
+   * @param {string} event The event name.
+   * @param {...*} arguments The arguments for listeners.
+   *
+   * @return {undefined}
+   *
+   * @example
+   * ee.emit('tick', tickType, tickDuration)
+   *
+   * @alias NanoEvents#emit
+   * @method
+   */
+  emit: function emit(event) {
+    var args = [].slice.call(arguments, 1) // Array.prototype.call() returns empty array if context is not array-like
+    ;
+    [].slice.call(this.events[event] || []).filter(function (i) {
+      i.apply(null, args);
+    });
+  },
+
+  /**
+   * Add a listener for a given event.
+   *
+   * @param {string} event The event name.
+   * @param {function} cb The listener function.
+   *
+   * @return {function} Unbind listener from event.
+   *
+   * @example
+   * const unbind = ee.on('tick', (tickType, tickDuration) => {
+   *   count += 1
+   * })
+   *
+   * disable () {
+   *   unbind()
+   * }
+   *
+   * @alias NanoEvents#on
+   * @method
+   */
+  on: function on(event, cb) {
+    if ("development" !== 'production' && typeof cb !== 'function') {
+      throw new Error('Listener must be a function');
+    }
+
+    (this.events[event] = this.events[event] || []).push(cb);
+    return function () {
+      this.events[event] = this.events[event].filter(function (i) {
+        return i !== cb;
+      });
+    }.bind(this);
+  }
+};
+},{}],"src/events.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.keyReleased = exports.keyPressed = exports.initKeys = void 0;
+exports.on = exports.emitter = void 0;
+
+var _nanoevents = _interopRequireDefault(require("nanoevents"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var emitter = new _nanoevents.default();
+exports.emitter = emitter;
+
+var on = function on(ev) {
+  var cb = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : function (args) {};
+  return emitter.on(ev, function (args) {
+    return cb(args);
+  });
+};
+
+exports.on = on;
+},{"nanoevents":"node_modules/nanoevents/index.js"}],"src/keys.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.onKeyEvent = exports.onKeyPressed = exports.initKeys = void 0;
+
+var _events = require("./events");
+
 // https://github.com/straker/kontra/blob/master/src/keyboard.js
 var keyMap = {};
 var callbacks = {};
@@ -4164,14 +4162,20 @@ var keydownEventHandler = function keydownEventHandler(evt) {
   if (callbacks[key]) {
     callbacks[key](evt);
   }
+
+  _events.emitter.emit("keydown", keyMap[evt.which]);
 };
 
 var keyupEventHandler = function keyupEventHandler(evt) {
   pressedKeys[keyMap[evt.which]] = false;
+
+  _events.emitter.emit("keyup", keyMap[evt.which]);
 };
 
-var blurEventHandler = function blurEventHandler() {
+var blurEventHandler = function blurEventHandler(evt) {
   pressedKeys = {};
+
+  _events.emitter.emit("blur", evt.which);
 };
 
 var initKeys = function initKeys() {
@@ -4187,28 +4191,28 @@ var initKeys = function initKeys() {
 
 
   for (i = 0; i < 10; i++) {
-    keyMap[48 + i] = '' + i;
+    keyMap[48 + i] = "" + i;
   }
 
-  window.addEventListener('keydown', keydownEventHandler);
-  window.addEventListener('keyup', keyupEventHandler);
-  window.addEventListener('blur', blurEventHandler);
+  window.addEventListener("keydown", keydownEventHandler);
+  window.addEventListener("keyup", keyupEventHandler);
+  window.addEventListener("blur", blurEventHandler);
 };
 
 exports.initKeys = initKeys;
 
-var keyPressed = function keyPressed(key) {
+var onKeyPressed = function onKeyPressed(key) {
   return !!pressedKeys[key];
 };
 
-exports.keyPressed = keyPressed;
+exports.onKeyPressed = onKeyPressed;
 
-var keyReleased = function keyReleased(key) {
-  return !!pressedKeys[key];
+var onKeyEvent = function onKeyEvent(e, cb) {
+  return (0, _events.on)(e, cb);
 };
 
-exports.keyReleased = keyReleased;
-},{}],"src/index.js":[function(require,module,exports) {
+exports.onKeyEvent = onKeyEvent;
+},{"./events":"src/events.js"}],"src/index.js":[function(require,module,exports) {
 "use strict";
 
 var _kontra = require("kontra");
@@ -4220,21 +4224,36 @@ var _keys = require("./keys");
 var _init = (0, _kontra.init)(),
     canvas = _init.canvas;
 
-var p = (0, _Sprite.Sprite)();
-var jumpReleased = true;
-var loop = (0, _kontra.GameLoop)({
-  // create the main game loop
-  update: function update(delta) {
-    if ((0, _keys.keyPressed)('a')) p.moveLeft();
-    if ((0, _keys.keyPressed)('d')) p.moveRight();
+var p = (0, _Sprite.Sprite)(); // Must fire before any keyboard use
 
-    if ((0, _keys.keyPressed)('w') && !p.isJumping() && jumpReleased) {
-      p.jump();
-      jumpReleased = false;
-    }
+(0, _keys.initKeys)(); // Bindings (fire once)
+
+var jumpPressed = false;
+(0, _keys.onKeyEvent)("keyup", function (key) {
+  switch (key) {
+    case "w":
+      jumpPressed = false;
+      break;
+  }
+});
+(0, _keys.onKeyEvent)("keydown", function (key) {
+  switch (key) {
+    case "w":
+      if (!jumpPressed) {
+        p.jump();
+        jumpPressed = true;
+      }
+
+      break;
+  }
+});
+var loop = (0, _kontra.GameLoop)({
+  update: function update(delta) {
+    // Fires continuously
+    if ((0, _keys.onKeyPressed)("a")) p.moveLeft();
+    if ((0, _keys.onKeyPressed)("d")) p.moveRight();
     /* Make sure this happens after keyPress or it won't register
     on the sprite body. */
-
 
     p.update(delta);
   },
@@ -4242,7 +4261,6 @@ var loop = (0, _kontra.GameLoop)({
     p.render();
   }
 });
-(0, _keys.initKeys)();
 loop.start(); // start the game
 },{"kontra":"node_modules/kontra/kontra.mjs","./Sprite":"src/Sprite.js","./keys":"src/keys.js"}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
@@ -4272,7 +4290,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "64793" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "60745" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
